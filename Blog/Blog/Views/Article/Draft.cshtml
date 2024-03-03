@@ -1,0 +1,104 @@
+﻿@{
+    ViewData["Title"] = "草稿編輯";
+}
+@model List<Article>
+@{
+    var currentId = ViewBag.EditId;
+    Article target;
+    if(currentId == null)
+    {
+        target = Model.LastOrDefault()!;
+    }
+    else
+    {
+        target = Model.FirstOrDefault(a => a == ViewBag.EditId)!;
+    }
+    var tempTime = (DateTime)target!.TravelTime!;
+    var time = tempTime.ToString("yyyy-MM-ddTHH:mm");
+    string content = target!.Contents!;
+}
+
+    <script src="~/lib/_js/jquery-3.6.0.js"></script>
+    <script src="https://cdn.tiny.cloud/1/cx5w3vy6l6bg0senjow539pjj585n4wqopo9s4r3viuyx88c/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+    <h2>草稿編輯</h2>
+
+<select id="dropdown">
+    @foreach (var article in Model)
+    {
+        <option value="@article.ArticleId">@article.Title</option>
+    }
+</select>
+<input type="text" id="articleId" value="@target.ArticleId" style="display: none;">
+        <div>
+            <label for="title">標題:</label>
+    <input type="text" id="title" value="@target.Title">
+        </div>
+        <div>
+            <label for="subtitle">副標題:</label>
+    <input type="text" id="subtitle" value="@target.Subtitle">
+        </div>
+        <div>
+            <label for="travelTime">時間:</label >
+            <input type="datetime-local" id="travelTime" value="@time">
+        </div>
+        <div>
+            <textarea id="tiny"></textarea>
+        </div>
+
+<button id="saveButton">Save</button>
+<button id="createButton">新增</button>
+    <script>
+        var backendData = @Html.Raw(Json.Serialize(content));
+        $(function(){
+                tinymce.init({
+                selector: '#tiny',
+                plugins: 'image',
+                toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | image | addcomment showcomments | spellcheckdialog a11ycheck typography | align lineheight ',
+                automatic_uploads: true,
+                images_upload_url: '/Article/UploadImage',
+                images_upload_base_path: '/img',
+                file_picker_types: 'image',
+                init_instance_callback: function (editor) {
+                editor.setContent(backendData);
+                }
+        });
+        $("#dropdown").on("change", function () {
+            var selectedOption = $(this).val();
+            alert("你選擇了：" + selectedOption);
+        });
+        
+
+        $('#saveButton').on('click',function(){
+            
+            let articleData={
+                articleId:$('#articleId').val(),
+                title : $('#title').val(),
+                subtitle : $('#subtitle').val(),
+                travelTime : $('#travelTime').val(),
+                content : tinymce.get('tiny').getContent()
+            };
+            $.ajax({
+                type: "POST",
+                url: "/Article/SaveDraft", // 控制器的 URL
+                data : articleData,
+                success: function (response) {
+                    alert("儲存成功");
+                }
+            });
+        });
+        $('#createButton').on('click', function () {
+
+            $.ajax({
+                type: "post",
+                url: "/Article/CreateDraft", // 控制器的 URL
+                success: function (response) {
+                    alert("新增成功");
+                    window.location = "/Article/Draft/"
+                }
+            });
+        });
+
+        
+    });
+    </script>
+
